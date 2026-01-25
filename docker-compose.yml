@@ -1,0 +1,54 @@
+version: "3.8"
+services:
+  nutify:
+    image: dartsteven/nutify:arm64-latest  # o amd64-latest según tu arquitectura
+    container_name: nutify
+    privileged: true
+    cap_add:
+      - SYS_ADMIN
+      - SYS_RAWIO
+      - MKNOD
+    devices:
+      - /dev/bus/usb:/dev/bus/usb:rwm
+      - /dev:/dev:rw  # Acceso completo para hotplug USB
+    device_cgroup_rules:
+      - 'c 189:* rwm'
+    volumes:
+      # Volúmenes estándar de Nutify
+      - ./nutify/logs:/app/nutify/logs
+      - ./nutify/instance:/app/nutify/instance
+      - ./nutify/ssl:/app/ssl
+      - ./nutify/etc/nut:/etc/nut  # Aquí se genera upsmon.conf con NOTIFYCMD
+      - /run/udev:/run/udev:ro
+      
+      # Volumen para scripts de apagado remoto (nuevo)
+      - ./scripts:/scripts:ro
+      
+      # SSH keys desde el host (para apagado remoto sin sshpass)
+      - ~/.ssh:/root/.ssh:ro
+      
+      # SSH agent (opcional, para forwarding)
+      - /run/user/1000/keyring/ssh:/run/user/1000/keyring/ssh:ro
+      
+    environment:
+      # Configuración Nutify (Setup Wizard vía web UI)
+      - SECRET_KEY=tu_clave_secreta_fuerte_aqui
+      - UDEV=1
+      - SERVER_PORT=5050
+      - SERVER_HOST=0.0.0.0
+      - LOG=true
+      - LOG_LEVEL=INFO
+      
+      # Driver y UPS específico para Salicru (se puede sobreescribir en UI)
+      - NUT_MODE=SERVER
+      - NUT_DRIVER=usbhid-ups
+      - NUT_UPS_NAME=salicru_home
+      - NUT_UPS_PORT=auto
+      - NUT_UPS_POLLINTERVAL=15
+      
+    ports:
+      - "3493:3493"  # Puerto NUT
+      - "5050:5050"  # Web UI
+      - "8443:443"    # HTTPS (si SSL_ENABLED=true)
+    restart: unless-stopped
+    user: root
