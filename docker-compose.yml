@@ -1,5 +1,23 @@
 version: "3.8"
 services:
+
+#  nut-upsd:
+#    image: instantlinux/nut-upsd
+#    container_name: nut-upsd
+#    devices:
+#      - /dev/bus/usb:/dev/bus/usb:rwm
+#      - /dev:/dev:rw  # Acceso completo para hotplug USB
+#    ports:
+#      - "3493:3493"  # Expose port 3493 to allow access from other devices (for example, I use it to add the UPS to Home Assistant for persistant data tracking, instead of using Influx DB and Grafana)
+#    environment:
+#      - API_USER=${NUT_USER} #default user, change if desired
+#      - API_PASSWORD=${NUT_PASSWORD} # your password, change to your own
+#      - DRIVER=usbhid-ups  # Default driver, change if needed
+#      - NAME=salicru # name of the ups, and is now required by the nut-upsd container if I understand correctly. 
+#      - DESCRIPTION=Homelab-UPS # description of the UPS, I usually put where it is located here.
+#      - SERVER=master #default, script priority
+#    restart: unless-stopped
+
   nutify:
     image: dartsteven/nutify:arm64-latest  # o amd64-latest según tu arquitectura
     container_name: nutify
@@ -20,16 +38,15 @@ services:
       - ./nutify/ssl:/app/ssl
       - ./nutify/etc/nut:/etc/nut  # Aquí se genera upsmon.conf con NOTIFYCMD
       - /run/udev:/run/udev:ro
-      
+
       # Volumen para scripts de apagado remoto (nuevo)
       - ./scripts:/scripts:ro
-      
+
       # SSH keys desde el host (para apagado remoto sin sshpass)
       - ~/.ssh:/root/.ssh:ro
-      
+
       # SSH agent (opcional, para forwarding)
       - /run/user/1000/keyring/ssh:/run/user/1000/keyring/ssh:ro
-      
     environment:
       # Configuración Nutify (Setup Wizard vía web UI)
       - SECRET_KEY=tu_clave_secreta_fuerte_aqui
@@ -38,14 +55,13 @@ services:
       - SERVER_HOST=0.0.0.0
       - LOG=true
       - LOG_LEVEL=INFO
-      
+
       # Driver y UPS específico para Salicru (se puede sobreescribir en UI)
       - NUT_MODE=SERVER
       - NUT_DRIVER=usbhid-ups
       - NUT_UPS_NAME=salicru_home
       - NUT_UPS_PORT=auto
       - NUT_UPS_POLLINTERVAL=15
-      
     ports:
       - "3493:3493"  # Puerto NUT
       - "5050:5050"  # Web UI
